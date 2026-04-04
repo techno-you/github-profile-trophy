@@ -128,3 +128,8 @@ export class Error404 extends BaseError {
   readonly status = 404;
   readonly message = "Not Found";
 }
+
+export class Error403 extends BaseError {
+  readonly status = 403;
+  readonly message = "Forbidden";
+}

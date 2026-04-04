@@ -1,7 +1,7 @@
 import { Card } from "../src/card.ts";
 import { CONSTANTS, parseParams } from "../src/utils.ts";
 import { COLORS, Theme } from "../src/theme.ts";
-import { Error400 } from "../src/error_page.ts";
+import { Error400, Error403 } from "../src/error_page.ts";
 import "https://deno.land/x/dotenv@v0.5.0/load.ts";
 import { staticRenderRegeneration } from "../src/StaticRenderRegeneration/index.ts";
 import { GithubRepositoryService } from "../src/Repository/GithubRepository.ts";
@@ -86,6 +86,23 @@ async function app(req: Request): Promise<Response> {
         });
       </script>
     </section>`,
+    );
+    return new Response(
+      error.render(),
+      {
+        status: error.status,
+        headers: new Headers({
+          "Content-Type": "text/html",
+          "Cache-Control": cacheControlHeader,
+        }),
+      },
+    );
+  }
+  // Restrict usage to a single allowed GitHub username
+  const ALLOWED_USERNAME = "rdarshan927";
+  if (username !== ALLOWED_USERNAME) {
+    const error = new Error403(
+      `<p>This endpoint only supports the GitHub username "${ALLOWED_USERNAME}".</p>`,
     );
     return new Response(
       error.render(),
