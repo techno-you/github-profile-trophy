@@ -38,11 +38,24 @@ export default (request: Request) =>
 
 async function app(req: Request): Promise<Response> {
   const params = parseParams(req);
-  const username = params.get("username");
+  let username = params.get("username");
+  // If username is not provided as a query param, try to extract it from the path.
+  // Vercel rewrites may prefix the path with `/api`, so handle `/api/USERNAME` and `/USERNAME`.
+  if (!username) {
+    try {
+      const urlObj = new URL(req.url);
+      const segments = urlObj.pathname.replace(/^\/+/, "").split("/").filter(Boolean);
+      if (segments.length) {
+        username = segments[0] === "api" ? (segments[1] ?? null) : segments[0];
+      }
+    } catch {
+      // ignore URL parse errors and fall back to query param behavior
+    }
+  }
   const row = params.getNumberValue("row", CONSTANTS.DEFAULT_MAX_ROW);
   const column = params.getNumberValue("column", CONSTANTS.DEFAULT_MAX_COLUMN);
   const themeParam: string = params.getStringValue("theme", "default");
-  if (username === null) {
+  if (!username) {
     const [base] = req.url.split("?");
     const error = new Error400(
       `<section>
@@ -98,8 +111,8 @@ async function app(req: Request): Promise<Response> {
       },
     );
   }
-  // Restrict usage to a single allowed GitHub username
-  const ALLOWED_USERNAME = "rdarshan927";
+  // Restrict usage to a single allowed GitHub username (configurable via env)
+  const ALLOWED_USERNAME = ((globalThis as any)["Deno"]?.env?.get("ALLOWED_USERNAME")) ?? ((globalThis as any)["process"]?.env?.ALLOWED_USERNAME) ?? "rdarshan927";
   if (username !== ALLOWED_USERNAME) {
     const error = new Error403(
       `<p>This endpoint only supports the GitHub username "${ALLOWED_USERNAME}".</p>`,
