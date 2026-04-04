@@ -28,13 +28,47 @@ const defaultHeaders = new Headers(
   },
 );
 
-export default (request: Request) =>
-  staticRenderRegeneration(request, {
+export default (request: Request) => {
+  // Pre-check username and block disallowed users before serving cached responses
+  const paramsPre = parseParams(request);
+  let usernamePre = paramsPre.get("username");
+  if (!usernamePre) {
+    try {
+      const urlObj = new URL(request.url);
+      const segments = urlObj.pathname.replace(/^\/+/, "").split("/").filter(Boolean);
+      if (segments.length) {
+        usernamePre = segments[0] === "api" ? (segments[1] ?? null) : segments[0];
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  const ALLOWED_USERNAME_PRE = ((globalThis as any)["Deno"]?.env?.get("ALLOWED_USERNAME")) ?? ((globalThis as any)["process"]?.env?.ALLOWED_USERNAME) ?? "rdarshan927";
+
+  if (!usernamePre || usernamePre !== ALLOWED_USERNAME_PRE) {
+    const error = new Error403(
+      `<p>This endpoint only supports the GitHub username "${ALLOWED_USERNAME_PRE}".</p>`,
+    );
+    return new Response(
+      error.render(),
+      {
+        status: error.status,
+        headers: new Headers({
+          "Content-Type": "text/html",
+          "Cache-Control": cacheControlHeader,
+        }),
+      },
+    );
+  }
+
+  return staticRenderRegeneration(request, {
     revalidate: CONSTANTS.REVALIDATE_TIME,
     headers: defaultHeaders,
   }, function (req: Request) {
     return app(req);
   });
+};
 
 async function app(req: Request): Promise<Response> {
   const params = parseParams(req);
