@@ -131,5 +131,5 @@ export class Error404 extends BaseError {
 
 export class Error403 extends BaseError {
   readonly status = 403;
-  readonly message = "Forbidden";
+  readonly message = "Forbidden - only rdarshan927's GitHub profile is supported";
 }
