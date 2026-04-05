@@ -33,8 +33,6 @@ export class GithubApiService extends GithubRepository {
   ): Promise<GitHubUserAll | ServiceError> {
     const variables: { [key: string]: string } = {
       username,
-      from: "2008-01-01T00:00:00Z",
-      to: new Date().toISOString(),
     };
 
     if (after) {
@@ -133,8 +131,11 @@ export class GithubApiService extends GithubRepository {
           TOKENS[attempt],
         );
       });
-    } catch (error) {
-      if (error.cause instanceof ServiceError) {
+    } catch (error: unknown) {
+      if (
+        error instanceof Error &&
+        error.cause instanceof ServiceError
+      ) {
         Logger.error(error.cause.message);
         return error.cause;
       }

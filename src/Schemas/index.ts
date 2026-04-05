@@ -1,8 +1,8 @@
 export const queryUserActivity = `
-    query userInfo($username: String!, $from: DateTime!, $to: DateTime!) {
+    query userInfo($username: String!) {
       user(login: $username) {
         createdAt
-        contributionsCollection(from: $from, to: $to) {
+        contributionsCollection {
           totalCommitContributions
           restrictedContributionsCount
           totalPullRequestReviewContributions
@@ -62,10 +62,10 @@ export const queryUserRepository = `
 `;
 
 export const queryUserAll = `
-  query userInfo($username: String!, $from: DateTime!, $to: DateTime!, $after: String) {
+  query userInfo($username: String!, $after: String) {
     user(login: $username) {
       createdAt
-      contributionsCollection(from: $from, to: $to) {
+      contributionsCollection {
         totalCommitContributions
         restrictedContributionsCount
         totalPullRequestReviewContributions
