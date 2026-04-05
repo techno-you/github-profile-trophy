@@ -29,9 +29,20 @@ export const TOKENS = [
 export class GithubApiService extends GithubRepository {
   async requestUserAll(
     username: string,
+    after?: string,
   ): Promise<GitHubUserAll | ServiceError> {
-    return await this.executeQuery<GitHubUserAll>(queryUserAll, {
+    const variables: { [key: string]: string } = {
       username,
+      from: "2008-01-01T00:00:00Z",
+      to: new Date().toISOString(),
+    };
+
+    if (after) {
+      variables.after = after;
+    }
+
+    return await this.executeQuery<GitHubUserAll>(queryUserAll, {
+      ...variables,
     });
   }
   async requestUserRepository(
@@ -64,13 +75,42 @@ export class GithubApiService extends GithubRepository {
     );
   }
   async requestUserInfo(username: string): Promise<UserInfo | ServiceError> {
-    // Use single combined query instead of 4 separate queries to reduce Function Duration
     try {
-      const result = await this.requestUserAll(username);
-      if (result instanceof ServiceError) {
-        return result;
+      // Fetch all repository pages so stars/languages/age are truly all-time.
+      const allRepositories = [];
+      let combinedResult: GitHubUserAll | null = null;
+      let after: string | undefined;
+
+      while (true) {
+        const result = await this.requestUserAll(username, after);
+        if (result instanceof ServiceError) {
+          return result;
+        }
+
+        if (!combinedResult) {
+          combinedResult = result;
+        }
+
+        allRepositories.push(...result.repositories.nodes);
+
+        const pageInfo = result.repositories.pageInfo;
+        if (!pageInfo?.hasNextPage || !pageInfo.endCursor) {
+          break;
+        }
+        after = pageInfo.endCursor;
       }
-      return UserInfo.fromCombined(result);
+
+      if (!combinedResult) {
+        return new ServiceError("Not found", EServiceKindError.NOT_FOUND);
+      }
+
+      return UserInfo.fromCombined({
+        ...combinedResult,
+        repositories: {
+          ...combinedResult.repositories,
+          nodes: allRepositories,
+        },
+      });
     } catch {
       Logger.error(`Error fetching user info for username: ${username}`);
       return new ServiceError("Not found", EServiceKindError.NOT_FOUND);

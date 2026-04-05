@@ -5,9 +5,14 @@ type Repository = {
   stargazers: Stargazers;
   createdAt: string;
 };
+type PageInfo = {
+  hasNextPage: boolean;
+  endCursor: string | null;
+};
 export type GitHubUserRepository = {
   repositories: {
     totalCount: number;
+    pageInfo?: PageInfo;
     nodes: Repository[];
   };
 };

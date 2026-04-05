@@ -1,8 +1,8 @@
 export const queryUserActivity = `
-    query userInfo($username: String!) {
+    query userInfo($username: String!, $from: DateTime!, $to: DateTime!) {
       user(login: $username) {
         createdAt
-        contributionsCollection {
+        contributionsCollection(from: $from, to: $to) {
           totalCommitContributions
           restrictedContributionsCount
           totalPullRequestReviewContributions
@@ -62,10 +62,10 @@ export const queryUserRepository = `
 `;
 
 export const queryUserAll = `
-  query userInfo($username: String!) {
+  query userInfo($username: String!, $from: DateTime!, $to: DateTime!, $after: String) {
     user(login: $username) {
       createdAt
-      contributionsCollection {
+      contributionsCollection(from: $from, to: $to) {
         totalCommitContributions
         restrictedContributionsCount
         totalPullRequestReviewContributions
@@ -85,8 +85,12 @@ export const queryUserAll = `
       pullRequests(first: 1) {
         totalCount
       }
-      repositories(first: 50, ownerAffiliations: OWNER, orderBy: {direction: DESC, field: STARGAZERS}) {
+      repositories(first: 100, after: $after, ownerAffiliations: OWNER, orderBy: {direction: DESC, field: STARGAZERS}) {
         totalCount
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
         nodes {
           languages(first: 2, orderBy: {direction:DESC, field: SIZE}) {
             nodes {
